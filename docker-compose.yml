@@ -9,8 +9,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - codejam_net
   app:
     build:
       context: .
@@ -26,8 +24,6 @@ services:
       - "8080:8080"
     expose:
       - 8080
-    networks:
-      - codejam_net
   frontend:
     build:
       context: ./frontend
@@ -38,10 +34,5 @@ services:
       - 3000
     depends_on:
       - app
-    networks:
-      - codejam_net
 volumes:
   postgres_data:
-networks:
-  codejam_net:
-    driver: bridge
