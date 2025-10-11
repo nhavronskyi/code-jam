@@ -26,7 +26,6 @@ const Navbar = () => {
             <Link to="/profile">Profile</Link>
             <Link to="/settings">Settings</Link>
             <Link to="/legal">Legal</Link>
-            <Link to="/terms">Terms</Link>
           </>
         ) : (
           <span className="app-name">{APP_NAME}</span>
