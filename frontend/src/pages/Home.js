@@ -32,6 +32,12 @@ export default function Home() {
       });
   }, [isLoggedIn, navigate]);
 
+  // Create a lookup for vehicleId to vehicle name
+  const vehicleNameMap = vehicles.reduce((map, v) => {
+    map[v.id] = v.name || `${v.make} ${v.model}`;
+    return map;
+  }, {});
+
   // Basic stats calculations
   const totalVehicles = vehicles.length;
   const totalFuelEntries = fuelEntries.length;
@@ -98,7 +104,7 @@ export default function Home() {
             <ul style={{listStyle: 'none', padding: 0}}>
               {fuelEntries.slice(0,5).map(entry => (
                 <li key={entry.id} style={{marginBottom: '0.7rem'}}>
-                  {entry.date}: {entry.amount}L, {entry.price} {entry.currency} for {entry.vehicleName || entry.vehicleId}
+                  {entry.date}: {entry.liters}L, {entry.totalAmount} for {vehicleNameMap[entry.vehicleId] || `vehicle ${entry.vehicleId}`}
                 </li>
               ))}
             </ul>

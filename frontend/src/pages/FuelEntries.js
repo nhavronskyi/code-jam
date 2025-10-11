@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance, { setNavigate } from '../axiosInstance';
 import './FuelEntries.css';
 
+const getToday = () => new Date().toISOString().slice(0, 10);
+
 const FuelEntries = () => {
   const [vehicles, setVehicles] = useState([]);
   const [fuelEntries, setFuelEntries] = useState([]);
@@ -10,7 +12,7 @@ const FuelEntries = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
-    date: '',
+    date: getToday(),
     odometer: '',
     stationName: '',
     fuelBrand: '',
@@ -67,7 +69,7 @@ const FuelEntries = () => {
     try {
       await axiosInstance.post('/api/fuel-entries', { ...form, vehicleId: selectedVehicle });
       setForm({
-        date: '',
+        date: getToday(),
         odometer: '',
         stationName: '',
         fuelBrand: '',
@@ -95,8 +97,35 @@ const FuelEntries = () => {
     }
   };
 
+  // Error alert component
+  const ErrorAlert = ({ message, onClose }) => (
+    <div style={{
+      background: '#ffeaea',
+      color: '#b71c1c',
+      border: '1px solid #f5c2c7',
+      borderRadius: '8px',
+      padding: '0.8rem 1.2rem',
+      marginBottom: '1.2rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      fontWeight: 500,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+    }}>
+      <span>{message}</span>
+      <button onClick={onClose} style={{
+        background: 'none',
+        border: 'none',
+        color: '#b71c1c',
+        fontWeight: 'bold',
+        fontSize: '1.2rem',
+        cursor: 'pointer',
+        marginLeft: '1rem'
+      }} aria-label="Close">×</button>
+    </div>
+  );
+
   if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div className="fuel-entries-container">
@@ -105,7 +134,9 @@ const FuelEntries = () => {
         <p>View and manage fuel entries for your vehicles.</p>
       </div>
 
-      <label htmlFor="vehicle-select">Select a vehicle:</label>
+      {error && <ErrorAlert message={typeof error === 'string' ? error : error?.error || 'An error occurred'} onClose={() => setError(null)} />}
+
+      <label htmlFor="vehicle-select">Select a vehicle: </label>
       <select
         id="vehicle-select"
         className="fuel-entries-select"
