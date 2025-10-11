@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './AuthForm.css';
+import axiosInstance from '../axiosInstance';
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -9,12 +10,10 @@ const Profile = () => {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const res = await fetch('/api/user/profile', { credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to fetch profile');
-        const data = await res.json();
-        setProfile(data);
+        const res = await axiosInstance.get('/api/user/profile', { withCredentials: true });
+        setProfile(res.data);
       } catch (err) {
-        setError(err.message);
+        setError(err.response?.data?.message || err.message);
       } finally {
         setLoading(false);
       }
