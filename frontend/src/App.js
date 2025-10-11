@@ -1,18 +1,32 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Legal from './pages/Legal';
+import Register from './pages/Register';
+import FuelEntries from './pages/FuelEntries';
+import Terms from './pages/Terms';
+import Statistics from './pages/Statistics';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import Vehicles from './pages/Vehicles';
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
     <Router>
-      <nav>
-        <Link to="/">Home</Link> | <Link to="/login">Login</Link> | <Link to="/legal">Legal</Link>
-      </nav>
+      <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/legal" element={<Legal />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/fuel-entries" element={<ProtectedRoute><FuelEntries /></ProtectedRoute>} />
+        <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
+        <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/legal" element={<ProtectedRoute><Legal /></ProtectedRoute>} />
+        <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
       </Routes>
     </Router>
   );
