@@ -20,8 +20,8 @@ services:
     volumes:
       - ./build/libs/code-jam-0.0.1-SNAPSHOT.jar:/app/app.jar
     working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    command: [ "java", "-jar", "app.jar" ]
     ports:
       - "8080:8080"
 volumes:
-    postgres_data:
+  postgres_data:

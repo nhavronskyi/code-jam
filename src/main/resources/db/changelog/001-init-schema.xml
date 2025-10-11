@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="1" author="codejam">
+        <createTable tableName="users">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password_hash" type="VARCHAR(255)"/>
+            <column name="display_name" type="VARCHAR(255)"/>
+            <column name="currency" type="VARCHAR(8)"/>
+            <column name="distance_unit" type="VARCHAR(8)"/>
+            <column name="volume_unit" type="VARCHAR(8)"/>
+            <column name="time_zone" type="VARCHAR(64)"/>
+        </createTable>
+
+        <createTable tableName="vehicles">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="make" type="VARCHAR(255)"/>
+            <column name="model" type="VARCHAR(255)"/>
+            <column name="year" type="INT"/>
+            <column name="fuel_type" type="VARCHAR(64)"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="vehicles" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_vehicle_user"/>
+
+        <createTable tableName="fuel_entries">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="vehicle_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="odometer" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="station_name" type="VARCHAR(255)"/>
+            <column name="fuel_brand" type="VARCHAR(255)"/>
+            <column name="fuel_grade" type="VARCHAR(255)"/>
+            <column name="liters" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_amount" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="VARCHAR(500)"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="fuel_entries" baseColumnNames="vehicle_id"
+                                 referencedTableName="vehicles" referencedColumnNames="id"
+                                 constraintName="fk_fuelentry_vehicle"/>
+    </changeSet>
+</databaseChangeLog>
+
