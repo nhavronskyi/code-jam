@@ -26,7 +26,6 @@ const Navbar = () => {
             <Link to="/profile">Profile</Link>
             <Link to="/settings">Settings</Link>
             <Link to="/legal">Legal</Link>
-            <Link to="/terms">Terms</Link>
           </>
         ) : (
           <span className="app-name">{APP_NAME}</span>
@@ -40,10 +39,7 @@ const Navbar = () => {
           </>
         )}
         {isLoggedIn && (
-          <>
-            <span className="logged-in">Logged in</span>
-            <button className="nav-btn logout" onClick={handleLogout}>Logout</button>
-          </>
+          <button className="nav-btn logout" onClick={handleLogout}>Logout</button>
         )}
       </div>
     </nav>

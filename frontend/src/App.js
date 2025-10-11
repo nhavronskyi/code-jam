@@ -4,7 +4,6 @@ import Login from './pages/Login';
 import Legal from './pages/Legal';
 import Register from './pages/Register';
 import FuelEntries from './pages/FuelEntries';
-import Terms from './pages/Terms';
 import Statistics from './pages/Statistics';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -26,7 +25,6 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/legal" element={<ProtectedRoute><Legal /></ProtectedRoute>} />
-        <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
       </Routes>
     </Router>
   );
