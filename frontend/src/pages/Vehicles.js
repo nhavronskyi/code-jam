@@ -115,14 +115,18 @@ const Vehicles = () => {
           required
           style={{flex: '1 1 90px', minWidth: '90px'}}
         />
-        <input
-          type="text"
-          placeholder="Fuel Type"
+        <select
           value={newVehicle.fuelType}
           onChange={e => setNewVehicle({ ...newVehicle, fuelType: e.target.value })}
           required
-          style={{flex: '1 1 120px', minWidth: '120px'}}
-        />
+          className="auth-form-input"
+          style={{flex: '1 1 120px', minWidth: '120px', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px', fontSize: '1rem', height: '40px'}}
+        >
+          <option value="" disabled>Select Fuel Type</option>
+          <option value="lpg">LPG</option>
+          <option value="diesel">Diesel</option>
+          <option value="petrol">Petrol</option>
+        </select>
         <button type="submit" disabled={adding} style={{background: '#61dafb', color: '#222', border: 'none', borderRadius: '6px', padding: '0.6rem 1.2rem', fontWeight: 600, cursor: 'pointer', minWidth: '100px'}}>Add</button>
       </form>
       <h3 style={{marginBottom: '1.2rem', marginTop: '2rem', textAlign: 'center'}}>Your Vehicle List</h3>
