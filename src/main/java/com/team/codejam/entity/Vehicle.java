@@ -16,7 +16,7 @@ public class Vehicle {
     private String name;
     private String make;
     private String model;
-    @Column(name = "vehicle_year")
+    @Column(name = "year")
     private Integer year;
     private String fuelType;
 
