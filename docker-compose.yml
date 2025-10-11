@@ -24,6 +24,8 @@ services:
     working_dir: /app
     ports:
       - "8080:8080"
+    expose:
+      - 8080
     networks:
       - codejam_net
   frontend:
@@ -32,6 +34,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    expose:
+      - 3000
     depends_on:
       - app
     networks:
