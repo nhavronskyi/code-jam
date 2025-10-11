@@ -8,6 +8,7 @@ import com.team.codejam.entity.Vehicle;
 import com.team.codejam.repository.VehicleRepository;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,12 +18,11 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/fuel-entries")
+@RequiredArgsConstructor
 public class FuelEntryController {
-    @Autowired
-    private FuelEntryService fuelEntryService;
 
-    @Autowired
-    private VehicleRepository vehicleRepository;
+    private final FuelEntryService fuelEntryService;
+    private final VehicleRepository vehicleRepository;
 
     @GetMapping("/vehicle/{vehicleId}")
     public ResponseEntity<List<FuelEntryResponseDto>> getEntries(@PathVariable Long vehicleId, HttpSession session) {
