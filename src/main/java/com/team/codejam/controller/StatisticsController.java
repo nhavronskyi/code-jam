@@ -3,6 +3,7 @@ package com.team.codejam.controller;
 import com.team.codejam.entity.User;
 import com.team.codejam.security.AppUserDetails;
 import com.team.codejam.service.StatisticsService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -67,12 +68,16 @@ public class StatisticsController {
     public Map<String, Map<String, Object>> getMonthlyStats(
             @RequestParam Long vehicleId,
             @RequestParam(required = false) Integer windowSizeDays) {
+        if (windowSizeDays == null) {
+            windowSizeDays = 30; // default to last 30 days
+        }
         return statisticsService.getMonthlyStats(getCurrentUserId(), vehicleId, windowSizeDays);
     }
 
     @GetMapping("/grade")
-    public List<Map<String, Object>> getGradeStats(@RequestParam Long userId, @RequestParam Long vehicleId) {
-        return statisticsService.getGradeStats(userId, vehicleId);
+    public List<Map<String, Object>> getGradeStats(HttpSession session, @RequestParam Long vehicleId) {
+        Long userId = (Long) session.getAttribute("userId");
+        return statisticsService.getGradeStats(vehicleId, userId);
     }
 
     @GetMapping("/best-worst")
