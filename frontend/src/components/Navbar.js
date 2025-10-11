@@ -25,7 +25,6 @@ const Navbar = () => {
             <Link to="/statistics">Statistics</Link>
             <Link to="/profile">Profile</Link>
             <Link to="/settings">Settings</Link>
-            <Link to="/legal">Legal</Link>
           </>
         ) : (
           <span className="app-name">{APP_NAME}</span>
