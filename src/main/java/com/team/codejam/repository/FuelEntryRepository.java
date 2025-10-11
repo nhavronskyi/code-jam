@@ -13,14 +13,11 @@ import java.util.List;
 public interface FuelEntryRepository extends JpaRepository<FuelEntry, Long> {
     List<FuelEntry> findByVehicleIdOrderByDateDesc(Long vehicleId);
 
-    List<FuelEntry> findByVehicleIdAndDateBetweenOrderByDateDesc(Long vehicleId, LocalDate start, LocalDate end);
-
     List<FuelEntry> findByVehicleUserIdAndVehicleIdOrderByDateDesc(Long userId, Long vehicleId);
 
     List<FuelEntry> findByVehicleUserIdAndVehicleIdAndDateBetweenOrderByDateDesc(Long userId, Long vehicleId, LocalDate start, LocalDate end);
 
     List<FuelEntry> findByVehicleUserIdAndDateBetween(Long userId, LocalDate start, LocalDate end);
-    List<FuelEntry> findByVehicleIdAndDateBetweenOrderByDateDesc(Long vehicleId, java.time.LocalDate start, java.time.LocalDate end);
 
     @Query("SELECT f FROM FuelEntry f WHERE (:vehicleId IS NULL OR f.vehicle.id = :vehicleId) " +
            "AND (:brand IS NULL OR f.fuelBrand = :brand) " +
