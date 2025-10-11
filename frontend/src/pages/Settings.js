@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance, { setNavigate } from '../axiosInstance';
 import './AuthForm.css';
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'PLN', 'JPY'];
@@ -7,64 +9,52 @@ const VOLUME_UNITS = ['L', 'gal'];
 const TIME_ZONES = ['UTC', 'Europe/Warsaw', 'America/New_York', 'Asia/Tokyo'];
 
 export default function Settings() {
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+
+  setNavigate(navigate);
 
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const res = await fetch('/api/user/profile', { credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to fetch profile');
-        const data = await res.json();
-        setProfile(data);
+        const res = await axiosInstance.get('/api/user/profile');
+        setProfile(res.data);
+        setLoading(false);
       } catch (err) {
-        setError(err.message);
-      } finally {
+        setError('Failed to fetch profile');
         setLoading(false);
       }
     }
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   const handleChange = e => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
-    setSuccess('');
-    setError('');
   };
 
-  const handleSubmit = async e => {
+  const handleSave = async e => {
     e.preventDefault();
-    setSuccess('');
-    setError('');
+    setSaving(true);
+    setError(null);
     try {
-      const res = await fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          currency: profile.currency,
-          distanceUnit: profile.distanceUnit,
-          volumeUnit: profile.volumeUnit,
-          timeZone: profile.timeZone
-        })
-      });
-      if (!res.ok) throw new Error('Failed to update settings');
-      setSuccess('Settings updated successfully!');
+      await axiosInstance.put('/api/user/profile', profile);
+      setSaving(false);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to save profile');
+      setSaving(false);
     }
   };
 
   if (loading) return <div className="auth-form-container"><p>Loading settings...</p></div>;
   if (error) return <div className="auth-form-container"><div className="error">{error}</div></div>;
-  if (!profile) return null;
 
   return (
     <div className="auth-form-container" style={{maxWidth: '500px'}}>
       <h2 style={{marginBottom: '2rem'}}>Settings</h2>
-      <form onSubmit={handleSubmit} style={{width: '100%'}}>
+      <form onSubmit={handleSave} style={{width: '100%'}}>
         <div style={{display: 'flex', flexDirection: 'column', gap: '1.2rem'}}>
           <label style={{fontWeight: 500, color: '#222'}}>
             Currency
@@ -95,9 +85,9 @@ export default function Settings() {
             </select>
           </label>
         </div>
-        <button type="submit" style={{marginTop: '2rem'}}>Save Settings</button>
-        {success && <div style={{color: 'green', marginTop: '1rem', textAlign: 'center'}}>{success}</div>}
-        {error && <div className="error">{error}</div>}
+        <button type="submit" style={{marginTop: '2rem'}} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Settings'}
+        </button>
       </form>
     </div>
   );
