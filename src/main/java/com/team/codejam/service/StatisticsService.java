@@ -41,14 +41,18 @@ public class StatisticsService {
     // --- Per-brand and per-grade comparisons ---
     public List<Map<String, Object>> getBrandGradeStats(Long userId, Long vehicleId) {
         List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
+        System.out.println("entries = " + entries);
         Map<String, List<FuelEntry>> byBrand = entries.stream().collect(Collectors.groupingBy(FuelEntry::getFuelBrand));
+        System.out.println("byBrand = " + byBrand);
         List<Map<String, Object>> stats = new ArrayList<>();
         for (String brand : byBrand.keySet()) {
             List<FuelEntry> brandEntries = byBrand.get(brand);
             double avgCostPerLiter = brandEntries.stream().mapToDouble(FuelEntry::getTotalAmount).sum() /
                     brandEntries.stream().mapToDouble(FuelEntry::getLiters).sum();
             double avgConsumption = calculateAvgConsumption(brandEntries);
+            double totalLiters = brandEntries.stream().mapToDouble(FuelEntry::getLiters).sum();
             Map<String, Object> stat = mapFuelEntryToMap(brandEntries.get(0), null);
+            stat.put("liters", totalLiters);
             stat.put("fuelBrand", brand);
             stat.put("avgCostPerLiter", avgCostPerLiter);
             stat.put("avgConsumptionLPer100km", avgConsumption);
@@ -100,12 +104,14 @@ public class StatisticsService {
             .filter(e -> !e.getDate().isBefore(windowAgo))
             .collect(Collectors.toList());
         Map<String, Map<String, Object>> stats = new TreeMap<>();
-        stats.put("last" + window + "Days", calculateAggregates(entries));
+        var x = calculateAggregates(entries);
+        x.put("avgDistancePerDay", (Integer)x.get("totalDistance") / windowSizeDays);
+        stats.put("last" + window + "Days", x);
         return stats;
     }
 
     // --- Statistics by fuel grade/type ---
-    public List<Map<String, Object>> getGradeStats(Long userId, Long vehicleId) {
+    public List<Map<String, Object>> getGradeStats(Long vehicleId, Long userId) {
         List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
         Map<String, List<FuelEntry>> byGrade = entries.stream().collect(Collectors.groupingBy(FuelEntry::getFuelGrade));
         List<Map<String, Object>> stats = new ArrayList<>();
@@ -200,8 +206,6 @@ public class StatisticsService {
         m.put("entryId", entry.getId());
         m.put("date", entry.getDate());
         m.put("odometer", entry.getOdometer());
-        m.put("liters", entry.getLiters());
-        m.put("totalAmount", entry.getTotalAmount());
         m.put("stationName", entry.getStationName());
         m.put("fuelBrand", entry.getFuelBrand());
         m.put("fuelGrade", entry.getFuelGrade());
