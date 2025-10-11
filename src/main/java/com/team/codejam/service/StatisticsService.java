@@ -41,14 +41,18 @@ public class StatisticsService {
     // --- Per-brand and per-grade comparisons ---
     public List<Map<String, Object>> getBrandGradeStats(Long userId, Long vehicleId) {
         List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
+        System.out.println("entries = " + entries);
         Map<String, List<FuelEntry>> byBrand = entries.stream().collect(Collectors.groupingBy(FuelEntry::getFuelBrand));
+        System.out.println("byBrand = " + byBrand);
         List<Map<String, Object>> stats = new ArrayList<>();
         for (String brand : byBrand.keySet()) {
             List<FuelEntry> brandEntries = byBrand.get(brand);
             double avgCostPerLiter = brandEntries.stream().mapToDouble(FuelEntry::getTotalAmount).sum() /
                     brandEntries.stream().mapToDouble(FuelEntry::getLiters).sum();
             double avgConsumption = calculateAvgConsumption(brandEntries);
+            double totalLiters = brandEntries.stream().mapToDouble(FuelEntry::getLiters).sum();
             Map<String, Object> stat = mapFuelEntryToMap(brandEntries.get(0), null);
+            stat.put("liters", totalLiters);
             stat.put("fuelBrand", brand);
             stat.put("avgCostPerLiter", avgCostPerLiter);
             stat.put("avgConsumptionLPer100km", avgConsumption);
@@ -86,21 +90,28 @@ public class StatisticsService {
         return calculateAggregates(entries);
     }
 
-    // --- Time-based statistics (monthly/yearly) ---
-    public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId, int year) {
-        List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
-        Map<String, List<FuelEntry>> byMonth = entries.stream().filter(e -> e.getDate().getYear() == year)
-                .collect(Collectors.groupingBy(e -> String.format("%02d", e.getDate().getMonthValue())));
+    // --- Time-based statistics (rolling window) ---
+    public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId) {
+        return getMonthlyStats(userId, vehicleId, 30);
+    }
+
+    public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId, Integer windowSizeDays) {
+        int window = (windowSizeDays != null) ? windowSizeDays : 30;
+        LocalDate today = LocalDate.now();
+        LocalDate windowAgo = today.minusDays(window);
+        List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId)
+            .stream()
+            .filter(e -> !e.getDate().isBefore(windowAgo))
+            .collect(Collectors.toList());
         Map<String, Map<String, Object>> stats = new TreeMap<>();
-        for (String month : byMonth.keySet()) {
-            List<FuelEntry> monthEntries = byMonth.get(month);
-            stats.put(month, calculateAggregates(monthEntries));
-        }
+        var x = calculateAggregates(entries);
+        x.put("avgDistancePerDay", (Integer)x.get("totalDistance") / windowSizeDays);
+        stats.put("last" + window + "Days", x);
         return stats;
     }
 
     // --- Statistics by fuel grade/type ---
-    public List<Map<String, Object>> getGradeStats(Long userId, Long vehicleId) {
+    public List<Map<String, Object>> getGradeStats(Long vehicleId, Long userId) {
         List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
         Map<String, List<FuelEntry>> byGrade = entries.stream().collect(Collectors.groupingBy(FuelEntry::getFuelGrade));
         List<Map<String, Object>> stats = new ArrayList<>();
@@ -195,8 +206,6 @@ public class StatisticsService {
         m.put("entryId", entry.getId());
         m.put("date", entry.getDate());
         m.put("odometer", entry.getOdometer());
-        m.put("liters", entry.getLiters());
-        m.put("totalAmount", entry.getTotalAmount());
         m.put("stationName", entry.getStationName());
         m.put("fuelBrand", entry.getFuelBrand());
         m.put("fuelGrade", entry.getFuelGrade());
@@ -221,7 +230,7 @@ public class StatisticsService {
         List<Double> consumptions = new ArrayList<>();
         for (FuelEntry entry : entries) {
             if (prev != null) {
-                int distance = entry.getOdometer() - prev.getOdometer();
+                int distance = prev.getOdometer() - entry.getOdometer();
                 totalDistance += distance;
                 if (distance > 0) {
                     consumptions.add((entry.getLiters() / distance) * 100);
