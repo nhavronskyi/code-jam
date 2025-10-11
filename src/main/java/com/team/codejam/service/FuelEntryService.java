@@ -25,11 +25,11 @@ public class FuelEntryService {
         fuelEntryRepository.deleteById(entryId);
     }
 
-    public Page<FuelEntry> getFilteredEntries(Long vehicleId, String brand, String grade, String station, LocalDate startDate, LocalDate endDate, int page) {
+    public Page<FuelEntry> getFilteredEntries(Long userId, Long vehicleId, String brand, String grade, String station, LocalDate startDate, LocalDate endDate, int page) {
         Pageable pageable = PageRequest.of(page, 25);
         System.out.println("fetching filtered entries "+ startDate + " | " + endDate + " | ");
         return fuelEntryRepository.findAll(
-            FuelEntrySpecification.filter(vehicleId, brand, grade, station, startDate, endDate),
+            FuelEntrySpecification.filter(vehicleId, brand, grade, station, startDate, endDate, userId),
             pageable
         );
     }
