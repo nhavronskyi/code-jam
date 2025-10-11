@@ -1,5 +1,6 @@
 package com.team.codejam.controller;
 
+import com.team.codejam.dto.DashboardResponseDto;
 import com.team.codejam.entity.FuelEntry;
 import com.team.codejam.entity.User;
 import com.team.codejam.service.FuelEntryService;
@@ -78,6 +79,21 @@ public class FuelEntryController {
         Page<FuelEntry> entries = fuelEntryService.getFilteredEntries(userId, vehicleId, brand, grade, station, startDate, endDate, page);
         List<FuelEntryResponseDto> dtos = entries.getContent().stream().map(this::toDto).collect(Collectors.toList());
         return ResponseEntity.ok(new PaginatedResponse<>(dtos, entries.getTotalPages(), entries.getTotalElements()));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> getDashboard(
+            @RequestParam(required = false) Long vehicleId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+        DashboardResponseDto dashboard = fuelEntryService.getDashboardStats(userId, vehicleId, startDate, endDate);
+        return ResponseEntity.ok(dashboard);
     }
 
     private FuelEntryResponseDto toDto(FuelEntry entry) {

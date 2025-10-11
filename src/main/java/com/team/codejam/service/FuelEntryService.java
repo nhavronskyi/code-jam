@@ -1,21 +1,27 @@
 package com.team.codejam.service;
 
+import com.team.codejam.dto.ChartPointDto;
+import com.team.codejam.dto.DashboardResponseDto;
 import com.team.codejam.entity.FuelEntry;
 import com.team.codejam.repository.FuelEntryRepository;
 import com.team.codejam.specification.FuelEntrySpecification;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class FuelEntryService {
-    @Autowired
-    private FuelEntryRepository fuelEntryRepository;
+
+    private final FuelEntryRepository fuelEntryRepository;
 
     public List<FuelEntry> getEntriesForVehicle(Long vehicleId) {
         return fuelEntryRepository.findByVehicleIdOrderByDateDesc(vehicleId);
@@ -26,11 +32,11 @@ public class FuelEntryService {
     }
 
     public Page<FuelEntry> getFilteredEntries(Long userId, Long vehicleId, String brand, String grade, String station, LocalDate startDate, LocalDate endDate, int page) {
-        Pageable pageable = PageRequest.of(page, 25);
-        System.out.println("fetching filtered entries "+ startDate + " | " + endDate + " | ");
+        Pageable pageable = PageRequest.of(page, 25, Sort.by("date").ascending());
+        System.out.println("fetching filtered entries " + startDate + " | " + endDate + " | ");
         return fuelEntryRepository.findAll(
-            FuelEntrySpecification.filter(vehicleId, brand, grade, station, startDate, endDate, userId),
-            pageable
+                FuelEntrySpecification.filter(vehicleId, brand, grade, station, startDate, endDate, userId),
+                pageable
         );
     }
 
@@ -39,7 +45,7 @@ public class FuelEntryService {
         // Odometer integrity: must be greater than previous entry for the same vehicle
         List<FuelEntry> entries = fuelEntryRepository.findByVehicleIdOrderByDateDesc(entry.getVehicle().getId());
         if (!entries.isEmpty()) {
-            FuelEntry latest = entries.get(0);
+            FuelEntry latest = entries.getFirst();
             if (entry.getDate().isAfter(latest.getDate()) || entry.getDate().isEqual(latest.getDate())) {
                 if (entry.getOdometer() <= latest.getOdometer()) {
                     throw new IllegalArgumentException("Odometer must be greater than previous entry for this vehicle");
@@ -60,8 +66,7 @@ public class FuelEntryService {
                 }
             }
         }
-        FuelEntry saved = fuelEntryRepository.save(entry);
-        return saved;
+        return fuelEntryRepository.save(entry);
     }
 
 
@@ -77,6 +82,100 @@ public class FuelEntryService {
         }
         if (entry.getDate() == null || entry.getDate().isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("Date must not be in the future");
+        }
+    }
+
+    public DashboardResponseDto getDashboardStats(Long userId, Long vehicleId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        List<FuelEntry> entries = fuelEntryRepository.findAll(
+                FuelEntrySpecification.filter(vehicleId, null, null, null, startDate, endDate, userId),
+                Sort.by("date").ascending()
+        );
+        if (entries.isEmpty()) {
+            return DashboardResponseDto.builder()
+                    .totalDistance(0)
+                    .totalLiters(0)
+                    .totalSpend(0)
+                    .avgCostPerLiter(null)
+                    .avgConsumption(null)
+                    .avgCostPerKm(null)
+                    .avgDistancePerDay(null)
+                    .costPerLiterData(List.of())
+                    .consumptionData(List.of())
+                    .build();
+        }
+        double totalLiters = calculateTotalLiters(entries);
+        double totalSpend = calculateTotalSpend(entries);
+        List<ChartPointDto> costPerLiterData = calculateCostPerLiterData(entries);
+        ConsumptionResult consumptionResult = calculateConsumptionData(entries);
+        Double avgCostPerLiter = totalLiters > 0 ? totalSpend / totalLiters : null;
+        Double avgConsumption = consumptionResult.totalDistance > 0 ? (totalLiters / consumptionResult.totalDistance) * 100 : null;
+        Double avgCostPerKm = consumptionResult.totalDistance > 0 ? totalSpend / consumptionResult.totalDistance : null;
+        Double avgDistancePerDay = calculateAvgDistancePerDay(entries, consumptionResult.totalDistance);
+        return DashboardResponseDto.builder()
+                .totalDistance(consumptionResult.totalDistance)
+                .totalLiters(totalLiters)
+                .totalSpend(totalSpend)
+                .avgCostPerLiter(avgCostPerLiter)
+                .avgConsumption(avgConsumption)
+                .avgCostPerKm(avgCostPerKm)
+                .avgDistancePerDay(avgDistancePerDay)
+                .costPerLiterData(costPerLiterData)
+                .consumptionData(consumptionResult.consumptionData)
+                .build();
+    }
+
+    private double calculateTotalLiters(List<FuelEntry> entries) {
+        return entries.stream().mapToDouble(e -> e.getLiters() != null ? e.getLiters() : 0).sum();
+    }
+
+    private double calculateTotalSpend(List<FuelEntry> entries) {
+        return entries.stream().mapToDouble(e -> e.getTotalAmount() != null ? e.getTotalAmount() : 0).sum();
+    }
+
+    private List<ChartPointDto> calculateCostPerLiterData(List<FuelEntry> entries) {
+        return entries.stream()
+                .map(e -> ChartPointDto.builder()
+                        .date(e.getDate().toString())
+                        .value((e.getLiters() != null && e.getLiters() > 0 && e.getTotalAmount() != null) ? e.getTotalAmount() / e.getLiters() : null)
+                        .build())
+                .toList();
+    }
+
+    private ConsumptionResult calculateConsumptionData(List<FuelEntry> entries) {
+        double totalDistance = 0;
+        List<ChartPointDto> consumptionData = new ArrayList<>();
+        for (int i = 1; i < entries.size(); i++) {
+            FuelEntry prev = entries.get(i - 1);
+            FuelEntry curr = entries.get(i);
+            double distance = curr.getOdometer() - prev.getOdometer();
+            if (distance > 0) {
+                totalDistance += distance;
+                consumptionData.add(ChartPointDto.builder()
+                        .date(curr.getDate().toString())
+                        .value((curr.getLiters() != null) ? (curr.getLiters() / distance) * 100 : null)
+                        .build());
+            } else {
+                consumptionData.add(ChartPointDto.builder().date(curr.getDate().toString()).value(null).build());
+            }
+        }
+        return new ConsumptionResult(totalDistance, consumptionData);
+    }
+
+    private Double calculateAvgDistancePerDay(List<FuelEntry> entries, double totalDistance) {
+        if (entries.size() > 1) {
+            long days = ChronoUnit.DAYS.between(entries.getFirst().getDate(), entries.getLast().getDate());
+            return days > 0 ? totalDistance / days : null;
+        }
+        return null;
+    }
+
+    private static class ConsumptionResult {
+        double totalDistance;
+        List<ChartPointDto> consumptionData;
+
+        ConsumptionResult(double totalDistance, List<ChartPointDto> consumptionData) {
+            this.totalDistance = totalDistance;
+            this.consumptionData = consumptionData;
         }
     }
 }
