@@ -1,8 +1,14 @@
 package com.team.codejam.controller;
 
+import com.team.codejam.dto.AuthResponseDto;
+import com.team.codejam.dto.ErrorResponseDto;
+import com.team.codejam.dto.SignInRequestDto;
+import com.team.codejam.dto.SignUpRequestDto;
 import com.team.codejam.entity.User;
+import com.team.codejam.security.AppUserDetails;
 import com.team.codejam.service.UserService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,14 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.team.codejam.dto.SignUpRequestDto;
-import com.team.codejam.dto.SignInRequestDto;
-import com.team.codejam.dto.AuthResponseDto;
-import com.team.codejam.dto.ErrorResponseDto;
-
-import jakarta.validation.Valid;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -41,7 +39,8 @@ public class AuthController {
             User user = userService.registerUser(email, password);
             session.setAttribute("userId", user.getId());
             // Authenticate user in Spring Security
-            Authentication auth = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+            AppUserDetails userDetails = new AppUserDetails(user);
+            Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
             session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
             return ResponseEntity.ok().body(new AuthResponseDto("Account created and signed in"));
@@ -60,7 +59,8 @@ public class AuthController {
             User user = userOpt.get();
             session.setAttribute("userId", user.getId());
             // Authenticate user in Spring Security
-            Authentication auth = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+            AppUserDetails userDetails = new AppUserDetails(user);
+            Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
             session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
             return ResponseEntity.ok().body(new AuthResponseDto("Signed in"));

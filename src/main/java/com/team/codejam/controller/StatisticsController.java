@@ -1,7 +1,11 @@
 package com.team.codejam.controller;
 
+import com.team.codejam.entity.User;
+import com.team.codejam.security.AppUserDetails;
 import com.team.codejam.service.StatisticsService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -18,13 +22,15 @@ public class StatisticsController {
     }
 
     private Long getCurrentUserId() {
-        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        // Assuming principal is a UserDetails with getId(), otherwise adapt as needed
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Object principal = authentication.getPrincipal();
-        if (principal instanceof com.team.codejam.entity.User) {
-            return ((com.team.codejam.entity.User) principal).getId();
+        if (principal instanceof AppUserDetails) {
+            return ((AppUserDetails) principal).getId();
         }
-        // If using a custom UserDetails, adapt here
+        // Legacy fallback if principal is still a User entity
+        if (principal instanceof User) {
+            return ((User) principal).getId();
+        }
         throw new IllegalStateException("User not authenticated or principal type unknown");
     }
 
@@ -84,4 +90,3 @@ public class StatisticsController {
         return statisticsService.getDashboardSummary(userId);
     }
 }
-
