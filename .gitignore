@@ -43,3 +43,4 @@ client_secret.json
 .DS_Store
 
 frontend/node_modules
+node_modules
