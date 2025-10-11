@@ -80,18 +80,9 @@ public class StatisticsController {
         return statisticsService.getGradeStats(vehicleId, userId);
     }
 
-    @GetMapping("/best-worst")
-    public Map<String, Object> getBestWorstFillUps(@RequestParam Long userId, @RequestParam Long vehicleId) {
-        return statisticsService.getBestWorstFillUps(userId, vehicleId);
-    }
-
-    @GetMapping("/efficiency")
-    public Map<String, Object> getMostLeastEfficientVehicles(@RequestParam Long userId) {
-        return statisticsService.getMostLeastEfficientVehicles(userId);
-    }
-
     @GetMapping("/dashboard")
-    public Map<String, Object> getDashboardSummary(@RequestParam Long userId) {
+    public Map<String, Object> getDashboardSummary() {
+        Long userId = getCurrentUserId();
         return statisticsService.getDashboardSummary(userId);
     }
 }

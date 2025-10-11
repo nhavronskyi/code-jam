@@ -1,15 +1,16 @@
 package com.team.codejam.service;
 
 import com.team.codejam.entity.FuelEntry;
-import com.team.codejam.entity.Vehicle;
 import com.team.codejam.repository.FuelEntryRepository;
-import com.team.codejam.repository.VehicleRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,7 +18,6 @@ import java.util.stream.Collectors;
 public class StatisticsService {
 
     private final FuelEntryRepository fuelEntryRepository;
-    private final VehicleRepository vehicleRepository;
 
     // --- Per-fill metrics ---
     public List<Map<String, Object>> getPerFillMetrics(Long userId, Long vehicleId) {
@@ -51,7 +51,7 @@ public class StatisticsService {
                     brandEntries.stream().mapToDouble(FuelEntry::getLiters).sum();
             double avgConsumption = calculateAvgConsumption(brandEntries);
             double totalLiters = brandEntries.stream().mapToDouble(FuelEntry::getLiters).sum();
-            Map<String, Object> stat = mapFuelEntryToMap(brandEntries.get(0), null);
+            Map<String, Object> stat = mapFuelEntryToMap(brandEntries.getFirst(), null);
             stat.put("liters", totalLiters);
             stat.put("fuelBrand", brand);
             stat.put("avgCostPerLiter", avgCostPerLiter);
@@ -63,36 +63,10 @@ public class StatisticsService {
         return stats;
     }
 
-    // --- Support for metric/imperial conversions ---
-    public static double litersToGallons(double liters) {
-        return liters / 3.78541;
-    }
-    public static double kmToMiles(double km) {
-        return km / 1.60934;
-    }
-    public static double consumptionToMPG(double liters, double km) {
-        double miles = kmToMiles(km);
-        double gallons = litersToGallons(liters);
-        return gallons > 0 ? miles / gallons : 0;
-    }
-    // --- Rounding helpers ---
-    public static double round(double value, int places) {
-        if (places < 0) throw new IllegalArgumentException();
-        long factor = (long) Math.pow(10, places);
-        value = value * factor;
-        long tmp = Math.round(value);
-        return (double) tmp / factor;
-    }
-
     // --- Aggregates across all vehicles ---
     public Map<String, Object> getUserAggregates(Long userId, LocalDate from, LocalDate to) {
         List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndDateBetween(userId, from, to);
         return calculateAggregates(entries);
-    }
-
-    // --- Time-based statistics (rolling window) ---
-    public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId) {
-        return getMonthlyStats(userId, vehicleId, 30);
     }
 
     public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId, Integer windowSizeDays) {
@@ -105,7 +79,7 @@ public class StatisticsService {
             .collect(Collectors.toList());
         Map<String, Map<String, Object>> stats = new TreeMap<>();
         var x = calculateAggregates(entries);
-        x.put("avgDistancePerDay", (Integer)x.get("totalDistance") / windowSizeDays);
+        x.put("avgDistancePerDay", (Integer) x.get("totalDistance") / windowSizeDays);
         stats.put("last" + window + "Days", x);
         return stats;
     }
@@ -120,7 +94,7 @@ public class StatisticsService {
             double avgCostPerLiter = gradeEntries.stream().mapToDouble(FuelEntry::getTotalAmount).sum() /
                     gradeEntries.stream().mapToDouble(FuelEntry::getLiters).sum();
             double avgConsumption = calculateAvgConsumption(gradeEntries);
-            Map<String, Object> stat = mapFuelEntryToMap(gradeEntries.get(0), null);
+            Map<String, Object> stat = mapFuelEntryToMap(gradeEntries.getFirst(), null);
             stat.put("fuelGrade", grade);
             stat.put("avgCostPerLiter", avgCostPerLiter);
             stat.put("avgConsumptionLPer100km", avgConsumption);
@@ -131,72 +105,10 @@ public class StatisticsService {
         return stats;
     }
 
-    // --- Best/worst fill-ups ---
-    public Map<String, Object> getBestWorstFillUps(Long userId, Long vehicleId) {
-        List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
-        FuelEntry best = null, worst = null;
-        double bestEfficiency = Double.MAX_VALUE, worstEfficiency = Double.MIN_VALUE;
-        FuelEntry prev = null;
-        for (FuelEntry entry : entries) {
-            if (prev != null) {
-                int distance = entry.getOdometer() - prev.getOdometer();
-                double efficiency = distance > 0 ? (entry.getLiters() / distance) * 100 : Double.MAX_VALUE;
-                if (efficiency < bestEfficiency) {
-                    bestEfficiency = efficiency;
-                    best = entry;
-                }
-                if (efficiency > worstEfficiency) {
-                    worstEfficiency = efficiency;
-                    worst = entry;
-                }
-            }
-            prev = entry;
-        }
-        Map<String, Object> result = new HashMap<>();
-        result.put("bestFillUp", best);
-        result.put("worstFillUp", worst);
-        return result;
-    }
-
-    // --- Most/least efficient vehicles ---
-    public Map<String, Object> getMostLeastEfficientVehicles(Long userId) {
-        List<Vehicle> vehicles = vehicleRepository.findByUserId(userId);
-        Vehicle mostEff = null, leastEff = null;
-        double bestEff = Double.MAX_VALUE, worstEff = Double.MIN_VALUE;
-        for (Vehicle v : vehicles) {
-            List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, v.getId());
-            FuelEntry prev = null;
-            List<Double> effs = new ArrayList<>();
-            for (FuelEntry entry : entries) {
-                if (prev != null) {
-                    int distance = entry.getOdometer() - prev.getOdometer();
-                    if (distance > 0) {
-                        effs.add((entry.getLiters() / distance) * 100);
-                    }
-                }
-                prev = entry;
-            }
-            double avgEff = effs.stream().mapToDouble(Double::doubleValue).average().orElse(Double.MAX_VALUE);
-            if (avgEff < bestEff) {
-                bestEff = avgEff;
-                mostEff = v;
-            }
-            if (avgEff > worstEff && avgEff < Double.MAX_VALUE) {
-                worstEff = avgEff;
-                leastEff = v;
-            }
-        }
-        Map<String, Object> result = new HashMap<>();
-        result.put("mostEfficientVehicle", mostEff);
-        result.put("leastEfficientVehicle", leastEff);
-        return result;
-    }
-
     // --- Dashboard summary ---
     public Map<String, Object> getDashboardSummary(Long userId) {
         Map<String, Object> summary = new HashMap<>();
         summary.put("userAggregates", getUserAggregates(userId, LocalDate.now().minusYears(1), LocalDate.now()));
-        summary.put("mostLeastEfficientVehicles", getMostLeastEfficientVehicles(userId));
         return summary;
     }
 
