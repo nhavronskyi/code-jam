@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance, { setNavigate } from '../axiosInstance';
 import './AuthForm.css';
 
 const Vehicles = () => {
@@ -18,18 +19,15 @@ const Vehicles = () => {
       navigate('/login');
       return;
     }
+    setNavigate(navigate);
     setLoading(true);
-    fetch('/api/vehicles', { credentials: 'include' })
+    axiosInstance.get('/api/vehicles')
       .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch vehicles');
-        return res.json();
-      })
-      .then(data => {
-        setVehicles(data);
+        setVehicles(res.data);
         setLoading(false);
       })
       .catch(err => {
-        setError(err.message);
+        setError('Failed to fetch vehicles');
         setLoading(false);
       });
   }, [isLoggedIn, navigate]);
@@ -39,23 +37,14 @@ const Vehicles = () => {
     e.preventDefault();
     setAdding(true);
     setError(null);
-    fetch('/api/vehicles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(newVehicle)
-    })
+    axiosInstance.post('/api/vehicles', newVehicle)
       .then(res => {
-        if (!res.ok) throw new Error('Failed to add vehicle');
-        return res.json();
-      })
-      .then(vehicle => {
-        setVehicles([...vehicles, vehicle]);
+        setVehicles([...vehicles, res.data]);
         setNewVehicle({ name: '', make: '', model: '', year: '', fuelType: '' });
         setAdding(false);
       })
       .catch(err => {
-        setError(err.message);
+        setError('Failed to add vehicle');
         setAdding(false);
       });
   };
@@ -63,15 +52,11 @@ const Vehicles = () => {
   // Delete vehicle handler
   const handleDeleteVehicle = (id) => {
     setError(null);
-    fetch(`/api/vehicles/${id}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
+    axiosInstance.delete(`/api/vehicles/${id}`)
       .then(res => {
-        if (!res.ok) throw new Error('Failed to delete vehicle');
         setVehicles(vehicles.filter(v => v.id !== id));
       })
-      .catch(err => setError(err.message));
+      .catch(err => setError('Failed to delete vehicle'));
   };
 
   if (!isLoggedIn) {

@@ -1,0 +1,102 @@
+/* FuelEntries.css */
+.fuel-entries-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.fuel-entries-header {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.fuel-entries-select {
+  margin-bottom: 1.5rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.fuel-entries-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.fuel-entries-form input {
+  flex: 1 1 180px;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.fuel-entries-form button {
+  padding: 0.5rem 1.5rem;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+.fuel-entries-form button:disabled {
+  background: #90caf9;
+  cursor: not-allowed;
+}
+
+.fuel-entries-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+.fuel-entries-table th, .fuel-entries-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+.fuel-entries-table th {
+  background: #f0f4f8;
+}
+.fuel-entries-table tr:last-child td {
+  border-bottom: none;
+}
+.fuel-entries-table button {
+  padding: 0.3rem 0.8rem;
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+.fuel-entries-table button:hover {
+  background: #b71c1c;
+}
+
+@media (max-width: 600px) {
+  .fuel-entries-container {
+    padding: 1rem;
+  }
+  .fuel-entries-form {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .fuel-entries-form input {
+    flex: 1 1 100%;
+  }
+  .fuel-entries-table th, .fuel-entries-table td {
+    padding: 0.5rem;
+    font-size: 0.95rem;
+  }
+}
+

@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Legal from './pages/Legal';
 import Register from './pages/Register';
 import FuelEntries from './pages/FuelEntries';
 import Statistics from './pages/Statistics';
@@ -24,7 +23,6 @@ function App() {
         <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/legal" element={<ProtectedRoute><Legal /></ProtectedRoute>} />
       </Routes>
     </Router>
   );

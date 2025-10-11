@@ -2,6 +2,7 @@ package com.team.codejam.service;
 
 import com.team.codejam.entity.FuelEntry;
 import com.team.codejam.repository.FuelEntryRepository;
+import com.team.codejam.specification.FuelEntrySpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,7 +27,11 @@ public class FuelEntryService {
 
     public Page<FuelEntry> getFilteredEntries(Long vehicleId, String brand, String grade, String station, LocalDate startDate, LocalDate endDate, int page) {
         Pageable pageable = PageRequest.of(page, 25);
-        return fuelEntryRepository.findFiltered(vehicleId, brand, grade, station, startDate, endDate, pageable);
+        System.out.println("fetching filtered entries "+ startDate + " | " + endDate + " | ");
+        return fuelEntryRepository.findAll(
+            FuelEntrySpecification.filter(vehicleId, brand, grade, station, startDate, endDate),
+            pageable
+        );
     }
 
     public FuelEntry addFuelEntry(FuelEntry entry) {

@@ -21,7 +21,8 @@ public class StatisticsService {
 
     // --- Per-fill metrics ---
     public List<Map<String, Object>> getPerFillMetrics(Long userId, Long vehicleId) {
-        List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
+        List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateAsc(userId, vehicleId);
+        System.out.println("entries = " + entries);
         List<Map<String, Object>> metrics = new ArrayList<>();
         FuelEntry prev = null;
         for (FuelEntry entry : entries) {
