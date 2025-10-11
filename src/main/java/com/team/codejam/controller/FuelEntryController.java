@@ -1,11 +1,13 @@
 package com.team.codejam.controller;
 
 import com.team.codejam.entity.FuelEntry;
+import com.team.codejam.entity.User;
 import com.team.codejam.service.FuelEntryService;
 import com.team.codejam.dto.FuelEntryRequestDto;
 import com.team.codejam.dto.FuelEntryResponseDto;
 import com.team.codejam.entity.Vehicle;
 import com.team.codejam.repository.VehicleRepository;
+import com.team.codejam.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.team.codejam.security.AppUserDetails;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +30,8 @@ public class FuelEntryController {
 
     private final FuelEntryService fuelEntryService;
     private final VehicleRepository vehicleRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping("/vehicle/{vehicleId}")
     public ResponseEntity<List<FuelEntryResponseDto>> getEntries(@PathVariable Long vehicleId, HttpSession session) {
@@ -37,12 +44,18 @@ public class FuelEntryController {
     }
 
     @PostMapping
-    public ResponseEntity<FuelEntryResponseDto> addEntry(@Valid @RequestBody FuelEntryRequestDto entryDto, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) return ResponseEntity.status(401).build();
+    public ResponseEntity<FuelEntryResponseDto> addEntry(@Valid @RequestBody FuelEntryRequestDto entryDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
         Vehicle vehicle = vehicleRepository.findById(entryDto.getVehicleId()).orElse(null);
         if (vehicle == null) return ResponseEntity.badRequest().build();
         FuelEntry entry = toEntity(entryDto, vehicle);
+        User user = userRepository.findById(userDetails.getId()).orElse(null);
+        if (user == null) return ResponseEntity.status(401).build();
+        entry.setUser(user); // Set the user field
         FuelEntry saved = fuelEntryService.addFuelEntry(entry);
         return ResponseEntity.ok(toDto(saved));
     }
@@ -55,11 +68,14 @@ public class FuelEntryController {
             @RequestParam(required = false) String station,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
-            @RequestParam(defaultValue = "0") int page,
-            HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) return ResponseEntity.status(401).build();
-        Page<FuelEntry> entries = fuelEntryService.getFilteredEntries(vehicleId, brand, grade, station, startDate, endDate, page);
+            @RequestParam(defaultValue = "0") int page) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+        Page<FuelEntry> entries = fuelEntryService.getFilteredEntries(userId, vehicleId, brand, grade, station, startDate, endDate, page);
         List<FuelEntryResponseDto> dtos = entries.getContent().stream().map(this::toDto).collect(Collectors.toList());
         return ResponseEntity.ok(new PaginatedResponse<>(dtos, entries.getTotalPages(), entries.getTotalElements()));
     }

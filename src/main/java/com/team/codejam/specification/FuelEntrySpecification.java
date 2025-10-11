@@ -13,10 +13,14 @@ public class FuelEntrySpecification {
             String grade,
             String station,
             LocalDate startDate,
-            LocalDate endDate
+            LocalDate endDate,
+            Long userId
     ) {
         return (root, query, cb) -> {
             Predicate predicate = cb.conjunction();
+            if (userId != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("user").get("id"), userId));
+            }
             if (vehicleId != null) {
                 predicate = cb.and(predicate, cb.equal(root.get("vehicle").get("id"), vehicleId));
             }

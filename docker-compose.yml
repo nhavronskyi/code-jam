@@ -19,19 +19,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/codejam
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-    working_dir: /app
     ports:
       - "8080:8080"
-    expose:
-      - 8080
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    expose:
-      - 3000
     depends_on:
       - app
 volumes:
