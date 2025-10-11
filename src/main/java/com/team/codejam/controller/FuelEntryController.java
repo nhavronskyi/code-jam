@@ -37,12 +37,17 @@ public class FuelEntryController {
     private UserRepository userRepository;
 
     @GetMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<List<FuelEntryResponseDto>> getEntries(@PathVariable Long vehicleId, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) return ResponseEntity.status(401).build();
-        // Optionally check vehicle ownership
-        List<FuelEntryResponseDto> dtos = fuelEntryService.getEntriesForVehicle(vehicleId)
-            .stream().map(this::toDto).collect(Collectors.toList());
+    public ResponseEntity<List<FuelEntryResponseDto>> getEntries(
+            @PathVariable Long vehicleId,
+            @RequestParam(required = false, defaultValue = "metric") String units) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+        boolean imperialUnits = "imperial".equalsIgnoreCase(units);
+        List<FuelEntryResponseDto> dtos = fuelEntryService.getPerFillMetricsForVehicle(userId, vehicleId, imperialUnits);
         return ResponseEntity.ok(dtos);
     }
 
@@ -87,14 +92,16 @@ public class FuelEntryController {
     public ResponseEntity<?> getDashboard(
             @RequestParam(required = false) Long vehicleId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "metric") String units) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).build();
         }
         AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
         Long userId = userDetails.getId();
-        DashboardResponseDto dashboard = fuelEntryService.getDashboardStats(userId, vehicleId, startDate, endDate);
+        boolean imperialUnits = "imperial".equalsIgnoreCase(units);
+        DashboardResponseDto dashboard = fuelEntryService.getDashboardStats(userId, vehicleId, startDate, endDate, imperialUnits);
         return ResponseEntity.ok(dashboard);
     }
 

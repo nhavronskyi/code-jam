@@ -21,4 +21,5 @@ public class DashboardResponseDto {
     private Double avgDistancePerDay;
     private List<ChartPointDto> costPerLiterData;
     private List<ChartPointDto> consumptionData;
+    private Double avgConsumptionImperial;
 }

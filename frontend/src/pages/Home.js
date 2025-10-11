@@ -10,6 +10,7 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('30');
+  const [unitSystem, setUnitSystem] = useState('metric'); // 'metric' or 'imperial'
   const isLoggedIn = !!localStorage.getItem('userId');
   const navigate = useNavigate();
 
@@ -29,6 +30,7 @@ export default function Home() {
       : new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
     params.startDate = periodStart.toISOString().slice(0, 10);
     params.endDate = now.toISOString().slice(0, 10);
+    params.units = unitSystem;
     Promise.all([
       axiosInstance.get('/api/vehicles').then(res => res.data),
       axiosInstance.get('/api/fuel-entries/dashboard', { params }).then(res => res.data)
@@ -42,7 +44,7 @@ export default function Home() {
         setError('Failed to load dashboard info');
         setLoading(false);
       });
-  }, [isLoggedIn, navigate, selectedVehicle, selectedPeriod]);
+  }, [isLoggedIn, navigate, selectedVehicle, selectedPeriod, unitSystem]);
 
   return (
     <div style={{background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', padding: '2rem', maxWidth: '900px', margin: '2rem auto', textAlign: 'center'}}>
@@ -66,17 +68,39 @@ export default function Home() {
               <option value="YTD">Year to date</option>
             </select>
           </div>
+          <div style={{marginBottom: '1rem'}}>
+            <label><strong>Units:</strong></label>
+            <select value={unitSystem} onChange={e => setUnitSystem(e.target.value)}>
+              <option value="metric">L/100km</option>
+              <option value="imperial">MPG</option>
+            </select>
+          </div>
         </div>
       )}
       {/* Stats cards */}
       {isLoggedIn && !loading && dashboard && (
         <div style={{background: '#f4f8fb', borderRadius: '8px', padding: '1.2rem 1rem', marginBottom: '2rem', display: 'flex', gap: '2.5rem', flexWrap: 'wrap', justifyContent: 'center'}}>
-          <div><strong>{dashboard.avgCostPerLiter != null ? dashboard.avgCostPerLiter.toFixed(2) : '--'}</strong><br/><span style={{color: '#888'}}>Avg Cost/L</span></div>
-          <div><strong>{dashboard.avgConsumption != null ? dashboard.avgConsumption.toFixed(2) : '--'}</strong><br/><span style={{color: '#888'}}>Avg L/100km</span></div>
+          <div><strong>{unitSystem === 'metric'
+            ? (dashboard.avgCostPerLiter != null ? dashboard.avgCostPerLiter.toFixed(2) : '--')
+            : (dashboard.avgCostPerLiter != null ? (dashboard.avgCostPerLiter / 0.264172).toFixed(2) : '--')}
+          </strong><br/><span style={{color: '#888'}}>{unitSystem === 'metric' ? 'Avg Cost/L' : 'Avg Cost/Gal'}</span></div>
+          <div><strong>{unitSystem === 'metric'
+            ? (dashboard.avgConsumption != null ? dashboard.avgConsumption.toFixed(1) : '--')
+            : (dashboard.avgConsumptionImperial != null ? dashboard.avgConsumptionImperial.toFixed(1) : '--')}
+          </strong><br/><span style={{color: '#888'}}>{unitSystem === 'metric' ? 'Avg L/100km' : 'Avg MPG'}</span></div>
           <div><strong>{dashboard.totalSpend != null ? dashboard.totalSpend.toFixed(2) : '--'}</strong><br/><span style={{color: '#888'}}>Total Spend</span></div>
-          <div><strong>{dashboard.totalDistance != null ? dashboard.totalDistance : '--'}</strong><br/><span style={{color: '#888'}}>Total Distance</span></div>
-          <div><strong>{dashboard.avgCostPerKm != null ? dashboard.avgCostPerKm.toFixed(2) : '--'}</strong><br/><span style={{color: '#888'}}>Avg Cost/km</span></div>
-          <div><strong>{dashboard.avgDistancePerDay != null ? dashboard.avgDistancePerDay.toFixed(2) : '--'}</strong><br/><span style={{color: '#888'}}>Avg Distance/day</span></div>
+          <div><strong>{unitSystem === 'metric'
+            ? (dashboard.totalDistance != null ? dashboard.totalDistance : '--')
+            : (dashboard.totalDistance != null ? (dashboard.totalDistance * 0.621371).toFixed(0) : '--')}
+          </strong><br/><span style={{color: '#888'}}>{unitSystem === 'metric' ? 'Total Distance (km)' : 'Total Distance (mi)'}</span></div>
+          <div><strong>{unitSystem === 'metric'
+            ? (dashboard.avgCostPerKm != null ? dashboard.avgCostPerKm.toFixed(2) : '--')
+            : (dashboard.avgCostPerKm != null ? (dashboard.avgCostPerKm * 1.60934).toFixed(2) : '--')}
+          </strong><br/><span style={{color: '#888'}}>{unitSystem === 'metric' ? 'Avg Cost/km' : 'Avg Cost/mile'}</span></div>
+          <div><strong>{unitSystem === 'metric'
+            ? (dashboard.avgDistancePerDay != null ? dashboard.avgDistancePerDay.toFixed(2) : '--')
+            : (dashboard.avgDistancePerDay != null ? (dashboard.avgDistancePerDay * 0.621371).toFixed(2) : '--')}
+          </strong><br/><span style={{color: '#888'}}>{unitSystem === 'metric' ? 'Avg Distance/day (km)' : 'Avg Distance/day (mi)'}</span></div>
         </div>
       )}
       {/* Charts */}

@@ -4,6 +4,7 @@ import com.team.codejam.dto.ChartPointDto;
 import com.team.codejam.dto.DashboardResponseDto;
 import com.team.codejam.dto.BrandGradeComparisonDto;
 import com.team.codejam.dto.FuelEntryPerFillDto;
+import com.team.codejam.dto.FuelEntryResponseDto;
 import com.team.codejam.entity.FuelEntry;
 import com.team.codejam.repository.FuelEntryRepository;
 import com.team.codejam.specification.FuelEntrySpecification;
@@ -24,10 +25,6 @@ import java.util.List;
 public class FuelEntryService {
 
     private final FuelEntryRepository fuelEntryRepository;
-
-    public List<FuelEntry> getEntriesForVehicle(Long vehicleId) {
-        return fuelEntryRepository.findByVehicleIdOrderByDateDesc(vehicleId);
-    }
 
     public void deleteEntry(Long entryId) {
         fuelEntryRepository.deleteById(entryId);
@@ -87,7 +84,7 @@ public class FuelEntryService {
         }
     }
 
-    public DashboardResponseDto getDashboardStats(Long userId, Long vehicleId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+    public DashboardResponseDto getDashboardStats(Long userId, Long vehicleId, java.time.LocalDate startDate, java.time.LocalDate endDate, boolean imperialUnits) {
         List<FuelEntry> entries = fuelEntryRepository.findAll(
                 FuelEntrySpecification.filter(vehicleId, null, null, null, startDate, endDate, userId),
                 Sort.by("date").ascending()
@@ -99,6 +96,7 @@ public class FuelEntryService {
                     .totalSpend(0)
                     .avgCostPerLiter(null)
                     .avgConsumption(null)
+                    .avgConsumptionImperial(null)
                     .avgCostPerKm(null)
                     .avgDistancePerDay(null)
                     .costPerLiterData(List.of())
@@ -113,12 +111,20 @@ public class FuelEntryService {
         Double avgConsumption = consumptionResult.totalDistance > 0 ? (totalLiters / consumptionResult.totalDistance) * 100 : null;
         Double avgCostPerKm = consumptionResult.totalDistance > 0 ? totalSpend / consumptionResult.totalDistance : null;
         Double avgDistancePerDay = calculateAvgDistancePerDay(entries, consumptionResult.totalDistance);
+        Double avgConsumptionImperial = null;
+        if (imperialUnits && totalLiters > 0 && consumptionResult.totalDistance > 0) {
+            double miles = consumptionResult.totalDistance * 0.621371;
+            double gallons = totalLiters * 0.264172;
+            avgConsumptionImperial = gallons > 0 ? miles / gallons : null;
+            if (avgConsumptionImperial != null) avgConsumptionImperial = round(avgConsumptionImperial, 1);
+        }
         return DashboardResponseDto.builder()
                 .totalDistance(consumptionResult.totalDistance)
                 .totalLiters(totalLiters)
                 .totalSpend(totalSpend)
                 .avgCostPerLiter(avgCostPerLiter)
                 .avgConsumption(avgConsumption)
+                .avgConsumptionImperial(avgConsumptionImperial)
                 .avgCostPerKm(avgCostPerKm)
                 .avgDistancePerDay(avgDistancePerDay)
                 .costPerLiterData(costPerLiterData)
@@ -226,6 +232,57 @@ public class FuelEntryService {
                 .build());
         }
         return result;
+    }
+
+    public List<FuelEntryResponseDto> getPerFillMetricsForVehicle(Long userId, Long vehicleId, boolean imperialUnits) {
+        List<FuelEntry> entries = fuelEntryRepository.findAll(
+            FuelEntrySpecification.filter(vehicleId, null, null, null, null, null, userId),
+            Sort.by("date").ascending()
+        );
+        List<FuelEntryResponseDto> result = new ArrayList<>();
+        FuelEntry prev = null;
+        for (FuelEntry curr : entries) {
+            FuelEntryResponseDto dto = new FuelEntryResponseDto();
+            dto.setId(curr.getId());
+            dto.setVehicleId(curr.getVehicle().getId());
+            dto.setDate(curr.getDate());
+            dto.setOdometer(curr.getOdometer());
+            dto.setStationName(curr.getStationName());
+            dto.setFuelBrand(curr.getFuelBrand());
+            dto.setFuelGrade(curr.getFuelGrade());
+            dto.setLiters(curr.getLiters());
+            dto.setTotalAmount(curr.getTotalAmount());
+            dto.setNotes(curr.getNotes());
+            // Per-fill metrics
+            Double distanceSinceLast = null;
+            if (prev != null && curr.getOdometer() != null && prev.getOdometer() != null) {
+                distanceSinceLast = (double) (curr.getOdometer() - prev.getOdometer());
+            }
+            dto.setDistanceSinceLast(distanceSinceLast != null ? Double.valueOf(Math.round(distanceSinceLast)) : null);
+            Double unitPrice = (curr.getLiters() != null && curr.getLiters() > 0 && curr.getTotalAmount() != null) ? curr.getTotalAmount() / curr.getLiters() : null;
+            dto.setUnitPrice(unitPrice != null ? round(unitPrice, 2) : null);
+            Double costPerKm = (distanceSinceLast != null && distanceSinceLast > 0 && curr.getTotalAmount() != null) ? curr.getTotalAmount() / distanceSinceLast : null;
+            dto.setCostPerKm(costPerKm != null ? round(costPerKm, 2) : null);
+            Double efficiencyMetric = (curr.getLiters() != null && distanceSinceLast != null && distanceSinceLast > 0) ? (curr.getLiters() / distanceSinceLast) * 100 : null;
+            dto.setEfficiencyMetric(efficiencyMetric != null ? round(efficiencyMetric, 1) : null);
+            Double efficiencyImperial = null;
+            if (imperialUnits && curr.getLiters() != null && distanceSinceLast != null && distanceSinceLast > 0) {
+                double miles = distanceSinceLast * 0.621371;
+                double gallons = curr.getLiters() * 0.264172;
+                efficiencyImperial = gallons > 0 ? miles / gallons : null;
+            }
+            dto.setEfficiencyImperial(efficiencyImperial != null ? round(efficiencyImperial, 1) : null);
+            result.add(dto);
+            prev = curr;
+        }
+        return result;
+    }
+    private double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+        long factor = (long) Math.pow(10, places);
+        value = value * factor;
+        long tmp = Math.round(value);
+        return (double) tmp / factor;
     }
 
     private static class ConsumptionResult {

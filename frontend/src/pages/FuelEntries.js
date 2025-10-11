@@ -22,6 +22,7 @@ const FuelEntries = () => {
     notes: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [unitSystem, setUnitSystem] = useState('metric'); // 'metric' or 'imperial'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,7 +45,7 @@ const FuelEntries = () => {
       if (!selectedVehicle) return;
       setLoading(true);
       try {
-        const response = await axiosInstance.get(`/api/fuel-entries/vehicle/${selectedVehicle}`);
+        const response = await axiosInstance.get(`/api/fuel-entries/vehicle/${selectedVehicle}?units=${unitSystem}`);
         setFuelEntries(response.data);
         setLoading(false);
       } catch (err) {
@@ -53,7 +54,7 @@ const FuelEntries = () => {
       }
     };
     fetchFuelEntries();
-  }, [selectedVehicle, navigate]);
+  }, [selectedVehicle, unitSystem, navigate]);
 
   const handleVehicleChange = (e) => {
     setSelectedVehicle(e.target.value);
@@ -166,6 +167,14 @@ const FuelEntries = () => {
         </form>
       )}
 
+      <div style={{marginBottom: '1rem'}}>
+        <label><strong>Units:</strong></label>
+        <select value={unitSystem} onChange={e => setUnitSystem(e.target.value)}>
+          <option value="metric">L/100km</option>
+          <option value="imperial">MPG</option>
+        </select>
+      </div>
+
       {selectedVehicle && (
         <div style={{marginTop: '2rem'}}>
           <h2>Entries</h2>
@@ -175,29 +184,32 @@ const FuelEntries = () => {
                 <tr>
                   <th>Date</th>
                   <th>Odometer</th>
-                  <th>Station</th>
-                  <th>Brand</th>
-                  <th>Grade</th>
-                  <th>Liters</th>
-                  <th>Total Amount</th>
-                  <th>Notes</th>
-                  <th>Delete</th>
+                  <th>{unitSystem === 'metric' ? 'Liters' : 'Gallons'}</th>
+                  <th>Total</th>
+                  <th>Distance Since Last</th>
+                  <th>{unitSystem === 'metric' ? 'Unit Price (per L)' : 'Unit Price (per gal)'}</th>
+                  <th>{unitSystem === 'metric' ? 'Cost per Km' : 'Cost per Mile'}</th>
+                  <th>{unitSystem === 'metric' ? 'L/100km' : 'MPG'}</th>
                 </tr>
               </thead>
               <tbody>
-                {fuelEntries.map((entry) => (
-                  <tr key={entry.id}>
-                    <td>{entry.date}</td>
-                    <td>{entry.odometer}</td>
-                    <td>{entry.stationName}</td>
-                    <td>{entry.fuelBrand}</td>
-                    <td>{entry.fuelGrade}</td>
-                    <td>{entry.liters}</td>
-                    <td>{entry.totalAmount}</td>
-                    <td>{entry.notes}</td>
-                    <td><button onClick={() => handleDeleteEntry(entry.id)}>Delete</button></td>
-                  </tr>
-                ))}
+                {fuelEntries.map(entry => {
+                  const gallons = entry.liters != null ? entry.liters * 0.264172 : null;
+                  const pricePerGallon = entry.unitPrice != null ? entry.unitPrice / 0.264172 : null;
+                  const costPerMile = entry.costPerKm != null ? entry.costPerKm * 1.60934 : null;
+                  return (
+                    <tr key={entry.id}>
+                      <td>{entry.date}</td>
+                      <td>{entry.odometer}</td>
+                      <td>{unitSystem === 'metric' ? (entry.liters != null ? entry.liters.toFixed(2) : '--') : (gallons != null ? gallons.toFixed(2) : '--')}</td>
+                      <td>{entry.totalAmount != null ? entry.totalAmount.toFixed(2) : '--'}</td>
+                      <td>{entry.distanceSinceLast != null ? entry.distanceSinceLast : '--'}</td>
+                      <td>{unitSystem === 'metric' ? (entry.unitPrice != null ? entry.unitPrice.toFixed(2) : '--') : (pricePerGallon != null ? pricePerGallon.toFixed(2) : '--')}</td>
+                      <td>{unitSystem === 'metric' ? (entry.costPerKm != null ? entry.costPerKm.toFixed(2) : '--') : (costPerMile != null ? costPerMile.toFixed(2) : '--')}</td>
+                      <td>{unitSystem === 'metric' ? (entry.efficiencyMetric != null ? entry.efficiencyMetric.toFixed(1) : '--') : (entry.efficiencyImperial != null ? entry.efficiencyImperial.toFixed(1) : '--')}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ) : (

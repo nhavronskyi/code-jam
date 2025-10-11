@@ -17,4 +17,6 @@ public interface FuelEntryRepository extends JpaRepository<FuelEntry, Long>, Jpa
     List<FuelEntry> findByVehicleUserIdAndVehicleIdAndDateBetweenOrderByDateDesc(Long userId, Long vehicleId, LocalDate start, LocalDate end);
 
     List<FuelEntry> findByVehicleUserIdAndDateBetween(Long userId, LocalDate start, LocalDate end);
+
+    List<FuelEntry> findByVehicleIdOrderByDateAsc(Long vehicleId);
 }
