@@ -39,10 +39,7 @@ const Navbar = () => {
           </>
         )}
         {isLoggedIn && (
-          <>
-            <span className="logged-in">Logged in</span>
-            <button className="nav-btn logout" onClick={handleLogout}>Logout</button>
-          </>
+          <button className="nav-btn logout" onClick={handleLogout}>Logout</button>
         )}
       </div>
     </nav>
