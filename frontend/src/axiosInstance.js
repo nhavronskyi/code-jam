@@ -5,8 +5,7 @@ let navigate = null;
 export const setNavigate = nav => { navigate = nav; };
 
 const axiosInstance = axios.create({
-  // You can set baseURL here if needed
-  // baseURL: '/api',
+  baseURL: 'http://localhost:8080', // Fixed: removed trailing slash and /api
   withCredentials: true,
 });
 
@@ -23,4 +22,3 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
-
