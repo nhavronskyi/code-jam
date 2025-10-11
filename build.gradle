@@ -32,8 +32,17 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.h2database:h2'
+    // Updated Mockito and Byte Buddy for better Java compatibility
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+    testImplementation 'net.bytebuddy:byte-buddy:1.14.18'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    // Add JVM args for Java compatibility
+    jvmArgs = [
+        '-Dnet.bytebuddy.experimental=true',
+        '--add-opens=java.base/java.lang=ALL-UNNAMED',
+        '--add-opens=java.base/java.util=ALL-UNNAMED'
+    ]
 }

@@ -16,6 +16,7 @@ public class Vehicle {
     private String name;
     private String make;
     private String model;
+    @Column(name = "vehicle_year")
     private Integer year;
     private String fuelType;
 
