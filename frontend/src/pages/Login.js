@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './AuthForm.css';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -35,12 +36,14 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Login</h2>
-      <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Username" />
-      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
-      <button type="submit">Login</button>
-      {error && <div style={{color:'red'}}>{error}</div>}
-    </form>
+    <div className="auth-form-container">
+      <form onSubmit={handleSubmit} style={{width: '100%'}}>
+        <h2>Login</h2>
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" autoFocus />
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
+        <button type="submit">Login</button>
+        {error && <div className="error">{error}</div>}
+      </form>
+    </div>
   );
 }
