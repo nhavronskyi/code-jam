@@ -22,6 +22,7 @@ import com.team.codejam.dto.ErrorResponseDto;
 import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -53,17 +54,19 @@ public class AuthController {
     public ResponseEntity<?> signin(@Valid @RequestBody SignInRequestDto payload, HttpSession session) {
         String email = payload.getEmail();
         String password = payload.getPassword();
-        return userService.findByEmail(email)
-                .filter(user -> passwordEncoder.matches(password, user.getPasswordHash()))
-                .map(user -> {
-                    session.setAttribute("userId", user.getId());
-                    // Authenticate user in Spring Security
-                    Authentication auth = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                    session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-                    return ResponseEntity.ok().body(new AuthResponseDto("Signed in"));
-                })
-                .orElseGet(() -> ResponseEntity.status(401).body(new AuthResponseDto("Invalid credentials")));
+        Optional<User> userOpt = userService.findByEmail(email);
+
+        if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPasswordHash())) {
+            User user = userOpt.get();
+            session.setAttribute("userId", user.getId());
+            // Authenticate user in Spring Security
+            Authentication auth = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+            return ResponseEntity.ok().body(new AuthResponseDto("Signed in"));
+        } else {
+            return ResponseEntity.status(401).body(new ErrorResponseDto("Invalid credentials"));
+        }
     }
 
     @PostMapping("/signout")
