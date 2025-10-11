@@ -9,8 +9,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - codejam_net
   app:
-    image: openjdk:21-jdk-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       - db
     environment:
@@ -18,8 +22,22 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
     working_dir: /app
-    command: [ "java", "-jar", "app.jar" ]
     ports:
       - "8080:8080"
+    networks:
+      - codejam_net
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - app
+    networks:
+      - codejam_net
 volumes:
   postgres_data:
+networks:
+  codejam_net:
+    driver: bridge
