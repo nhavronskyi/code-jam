@@ -66,8 +66,8 @@ public class StatisticsController {
     @GetMapping("/monthly")
     public Map<String, Map<String, Object>> getMonthlyStats(
             @RequestParam Long vehicleId,
-            @RequestParam int year) {
-        return statisticsService.getMonthlyStats(getCurrentUserId(), vehicleId, year);
+            @RequestParam(required = false) Integer windowSizeDays) {
+        return statisticsService.getMonthlyStats(getCurrentUserId(), vehicleId, windowSizeDays);
     }
 
     @GetMapping("/grade")
