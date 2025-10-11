@@ -1,12 +1,12 @@
-package com.example.demo;
+package com.team.codejam;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DemoApplication {
+public class CodeJamApplication {
     public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
+        SpringApplication.run(CodeJamApplication.class, args);
     }
 }
 
