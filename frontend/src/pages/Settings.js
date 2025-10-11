@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance, { setNavigate } from '../axiosInstance';
 import './AuthForm.css';
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'PLN', 'JPY'];
-const DISTANCE_UNITS = ['km', 'mi'];
-const VOLUME_UNITS = ['L', 'gal'];
-const TIME_ZONES = ['UTC', 'Europe/Warsaw', 'America/New_York', 'Asia/Tokyo'];
+const UNIT_SYSTEMS = [
+  { value: 'metric', label: 'Metric' },
+  { value: 'imperial', label: 'Imperial' }
+];
 
 export default function Settings() {
   const [profile, setProfile] = useState({});
@@ -40,7 +40,7 @@ export default function Settings() {
     setSaving(true);
     setError(null);
     try {
-      await axiosInstance.put('/api/user/profile', profile);
+      await axiosInstance.put('/api/user/profile', { unitSystem: profile.unitSystem });
       setSaving(false);
     } catch (err) {
       setError('Failed to save profile');
@@ -57,31 +57,9 @@ export default function Settings() {
       <form onSubmit={handleSave} style={{width: '100%'}}>
         <div style={{display: 'flex', flexDirection: 'column', gap: '1.2rem'}}>
           <label style={{fontWeight: 500, color: '#222'}}>
-            Currency
-            <select name="currency" value={profile.currency || ''} onChange={handleChange} className="auth-select">
-              <option value="">Select currency</option>
-              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
-          <label style={{fontWeight: 500, color: '#222'}}>
-            Distance Unit
-            <select name="distanceUnit" value={profile.distanceUnit || ''} onChange={handleChange} className="auth-select">
-              <option value="">Select unit</option>
-              {DISTANCE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
-          </label>
-          <label style={{fontWeight: 500, color: '#222'}}>
-            Volume Unit
-            <select name="volumeUnit" value={profile.volumeUnit || ''} onChange={handleChange} className="auth-select">
-              <option value="">Select unit</option>
-              {VOLUME_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
-          </label>
-          <label style={{fontWeight: 500, color: '#222'}}>
-            Time Zone
-            <select name="timeZone" value={profile.timeZone || ''} onChange={handleChange} className="auth-select">
-              <option value="">Select time zone</option>
-              {TIME_ZONES.map(z => <option key={z} value={z}>{z}</option>)}
+            Unit system
+            <select name="unitSystem" value={profile.unitSystem || 'metric'} onChange={handleChange} className="auth-select">
+              {UNIT_SYSTEMS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
             </select>
           </label>
         </div>

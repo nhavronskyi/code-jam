@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import './AuthForm.css';
 import axiosInstance from '../axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchProfile() {
@@ -26,30 +28,31 @@ const Profile = () => {
   if (!profile) return null;
 
   return (
-    <div className="auth-form-container" style={{maxWidth: '500px'}}>
+    <div className="auth-form-container" style={{maxWidth: '500px', padding: '1rem'}}>
       <h2>Profile Information</h2>
+      <button style={{float: 'right', marginBottom: '1rem'}} onClick={() => navigate('/settings')}>Edit profile</button>
       <div style={{width: '100%', textAlign: 'left'}}>
         <p><strong>User ID:</strong> {profile.id}</p>
         <p><strong>Email:</strong> {profile.email}</p>
-        <p><strong>Display Name:</strong> {profile.displayName || 'N/A'}</p>
-        <p><strong>Currency:</strong> {profile.currency || 'N/A'}</p>
-        <p><strong>Distance Unit:</strong> {profile.distanceUnit || 'N/A'}</p>
-        <p><strong>Volume Unit:</strong> {profile.volumeUnit || 'N/A'}</p>
-        <p><strong>Time Zone:</strong> {profile.timeZone || 'N/A'}</p>
+        <p><strong>Display Name:</strong> {profile.displayName || <span style={{color:'#888'}}>Not set</span>}</p>
+        <p><strong>Unit system:</strong> {profile.unitSystem === 'imperial' ? 'Imperial' : 'Metric'}</p>
         <div style={{marginTop: '1.5rem'}}>
           <strong>Vehicles:</strong>
           {profile.vehicles && profile.vehicles.length > 0 ? (
             <ul style={{paddingLeft: '1.2rem'}}>
               {profile.vehicles.map(vehicle => (
-                <li key={vehicle.id}>
-                  <strong>{vehicle.name}</strong> ({vehicle.year})<br/>
-                  Make: {vehicle.make}, Model: {vehicle.model}<br/>
-                  Fuel Type: {vehicle.fuelType}
+                <li key={vehicle.id} style={{marginBottom: '1rem'}}>
+                  <strong>{vehicle.name || <span style={{color:'#888'}}>No name</span>}</strong> {vehicle.year ? `(${vehicle.year})` : ''}<br/>
+                  Make: {vehicle.make || <span style={{color:'#888'}}>Not set</span>}, Model: {vehicle.model || <span style={{color:'#888'}}>Not set</span>}<br/>
+                  Fuel Type: {vehicle.fuelType || <span style={{color:'#888'}}>Not set</span>}
                 </li>
               ))}
             </ul>
           ) : (
-            <p style={{marginLeft: '1rem'}}>No vehicles found.</p>
+            <div style={{marginLeft: '1rem'}}>
+              <p>No vehicles found.</p>
+              <button onClick={() => navigate('/vehicles/add')}>Add vehicle</button>
+            </div>
           )}
         </div>
       </div>

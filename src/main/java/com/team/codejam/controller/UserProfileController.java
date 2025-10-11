@@ -2,6 +2,7 @@ package com.team.codejam.controller;
 
 import com.team.codejam.dto.UserProfileResponseDto;
 import com.team.codejam.dto.UserSettingsUpdateRequestDto;
+import com.team.codejam.dto.VehicleDto;
 import com.team.codejam.entity.User;
 import com.team.codejam.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/user")
@@ -53,6 +55,20 @@ public class UserProfileController {
         dto.setDistanceUnit(user.getDistanceUnit());
         dto.setVolumeUnit(user.getVolumeUnit());
         dto.setTimeZone(user.getTimeZone());
+        if (user.getVehicles() != null) {
+            dto.setVehicles(user.getVehicles().stream().map(vehicle -> {
+                VehicleDto vDto = new VehicleDto();
+                vDto.setId(vehicle.getId());
+                vDto.setName(vehicle.getName());
+                vDto.setMake(vehicle.getMake());
+                vDto.setModel(vehicle.getModel());
+                vDto.setYear(vehicle.getYear());
+                vDto.setFuelType(vehicle.getFuelType());
+                return vDto;
+            }).collect(Collectors.toList()));
+        } else {
+            dto.setVehicles(null);
+        }
         return dto;
     }
 }
