@@ -11,6 +11,8 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,6 +45,23 @@ public class FuelEntryController {
         FuelEntry entry = toEntity(entryDto, vehicle);
         FuelEntry saved = fuelEntryService.addFuelEntry(entry);
         return ResponseEntity.ok(toDto(saved));
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getHistory(
+            @RequestParam(required = false) Long vehicleId,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String grade,
+            @RequestParam(required = false) String station,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
+            HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return ResponseEntity.status(401).build();
+        Page<FuelEntry> entries = fuelEntryService.getFilteredEntries(vehicleId, brand, grade, station, startDate, endDate, page);
+        List<FuelEntryResponseDto> dtos = entries.getContent().stream().map(this::toDto).collect(Collectors.toList());
+        return ResponseEntity.ok(new PaginatedResponse<>(dtos, entries.getTotalPages(), entries.getTotalElements()));
     }
 
     private FuelEntryResponseDto toDto(FuelEntry entry) {
@@ -81,5 +100,17 @@ public class FuelEntryController {
         // Optionally check entry ownership
         fuelEntryService.deleteEntry(id);
         return ResponseEntity.ok().build();
+    }
+
+    // Helper class for paginated response
+    class PaginatedResponse<T> {
+        public List<T> content;
+        public int totalPages;
+        public long totalElements;
+        public PaginatedResponse(List<T> content, int totalPages, long totalElements) {
+            this.content = content;
+            this.totalPages = totalPages;
+            this.totalElements = totalElements;
+        }
     }
 }

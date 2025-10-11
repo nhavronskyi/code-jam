@@ -1,5 +1,6 @@
 package com.team.codejam.controller;
 
+import com.team.codejam.dto.ErrorResponseDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,5 +35,10 @@ public class GlobalExceptionHandler {
                 "error", "Validation failed",
                 "details", errors
         ));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDto(ex.getMessage()));
     }
 }
