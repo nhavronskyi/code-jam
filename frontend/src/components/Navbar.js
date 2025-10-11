@@ -1,5 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import './Navbar.css';
+
+const APP_NAME = 'Code Jam';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -12,17 +15,37 @@ const Navbar = () => {
   };
 
   return (
-    <nav>
-      <Link to="/">Home</Link> |
-      {!isLoggedIn && <><Link to="/login">Login</Link> | <Link to="/register">Register</Link> |</>}
-      <Link to="/fuel-entries">Fuel Entries</Link> |
-      <Link to="/vehicles">Vehicles</Link> |
-      <Link to="/statistics">Statistics</Link> |
-      <Link to="/profile">Profile</Link> |
-      <Link to="/settings">Settings</Link> |
-      <Link to="/legal">Legal</Link> |
-      <Link to="/terms">Terms</Link> |
-      {isLoggedIn && <><span style={{marginLeft: '10px', color: 'green'}}>Logged in</span><button onClick={handleLogout} style={{marginLeft: '10px'}}>Logout</button></>}
+    <nav className="navbar">
+      <div className="navbar-links">
+        {isLoggedIn ? (
+          <>
+            <Link to="/">Home</Link>
+            <Link to="/fuel-entries">Fuel Entries</Link>
+            <Link to="/vehicles">Vehicles</Link>
+            <Link to="/statistics">Statistics</Link>
+            <Link to="/profile">Profile</Link>
+            <Link to="/settings">Settings</Link>
+            <Link to="/legal">Legal</Link>
+            <Link to="/terms">Terms</Link>
+          </>
+        ) : (
+          <span className="app-name">{APP_NAME}</span>
+        )}
+      </div>
+      <div className="navbar-actions">
+        {!isLoggedIn && (
+          <>
+            <button className="nav-btn" onClick={() => navigate('/login')}>Login</button>
+            <button className="nav-btn" onClick={() => navigate('/register')}>Register</button>
+          </>
+        )}
+        {isLoggedIn && (
+          <>
+            <span className="logged-in">Logged in</span>
+            <button className="nav-btn logout" onClick={handleLogout}>Logout</button>
+          </>
+        )}
+      </div>
     </nav>
   );
 };
