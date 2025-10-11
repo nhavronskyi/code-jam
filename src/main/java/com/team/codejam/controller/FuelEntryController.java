@@ -1,6 +1,8 @@
 package com.team.codejam.controller;
 
+import com.team.codejam.dto.BrandGradeComparisonDto;
 import com.team.codejam.dto.DashboardResponseDto;
+import com.team.codejam.dto.FuelEntryPerFillDto;
 import com.team.codejam.entity.FuelEntry;
 import com.team.codejam.entity.User;
 import com.team.codejam.service.FuelEntryService;
@@ -94,6 +96,36 @@ public class FuelEntryController {
         Long userId = userDetails.getId();
         DashboardResponseDto dashboard = fuelEntryService.getDashboardStats(userId, vehicleId, startDate, endDate);
         return ResponseEntity.ok(dashboard);
+    }
+
+    @GetMapping("/brand-grade-comparison")
+    public ResponseEntity<?> getBrandGradeComparison(
+            @RequestParam(required = false) Long vehicleId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+        List<BrandGradeComparisonDto> comparison = fuelEntryService.getBrandGradeComparison(userId, vehicleId, startDate, endDate);
+        return ResponseEntity.ok(comparison);
+    }
+
+    @GetMapping("/per-fill")
+    public ResponseEntity<?> getPerFillConsumption(
+            @RequestParam(required = false) Long vehicleId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+        List<FuelEntryPerFillDto> result = fuelEntryService.getPerFillConsumption(userId, vehicleId, startDate, endDate);
+        return ResponseEntity.ok(result);
     }
 
     private FuelEntryResponseDto toDto(FuelEntry entry) {

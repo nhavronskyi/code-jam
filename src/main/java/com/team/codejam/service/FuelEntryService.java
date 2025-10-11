@@ -2,6 +2,8 @@ package com.team.codejam.service;
 
 import com.team.codejam.dto.ChartPointDto;
 import com.team.codejam.dto.DashboardResponseDto;
+import com.team.codejam.dto.BrandGradeComparisonDto;
+import com.team.codejam.dto.FuelEntryPerFillDto;
 import com.team.codejam.entity.FuelEntry;
 import com.team.codejam.repository.FuelEntryRepository;
 import com.team.codejam.specification.FuelEntrySpecification;
@@ -167,6 +169,63 @@ public class FuelEntryService {
             return days > 0 ? totalDistance / days : null;
         }
         return null;
+    }
+
+    public List<BrandGradeComparisonDto> getBrandGradeComparison(Long userId, Long vehicleId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        List<FuelEntry> entries = fuelEntryRepository.findAll(
+            FuelEntrySpecification.filter(vehicleId, null, null, null, startDate, endDate, userId),
+            Sort.by("date").ascending()
+        );
+        if (entries.isEmpty()) return List.of();
+        // Group by brand and grade
+        return entries.stream()
+            .collect(java.util.stream.Collectors.groupingBy(e -> e.getFuelBrand() + "|" + e.getFuelGrade()))
+            .entrySet().stream()
+            .map(entry -> {
+                List<FuelEntry> group = entry.getValue();
+                String[] keys = entry.getKey().split("\\|");
+                String brand = keys.length > 0 ? keys[0] : "";
+                String grade = keys.length > 1 ? keys[1] : "";
+                double totalLiters = group.stream().mapToDouble(e -> e.getLiters() != null ? e.getLiters() : 0).sum();
+                double totalSpend = group.stream().mapToDouble(e -> e.getTotalAmount() != null ? e.getTotalAmount() : 0).sum();
+                double totalDistance = 0;
+                for (int i = 1; i < group.size(); i++) {
+                    FuelEntry prev = group.get(i - 1);
+                    FuelEntry curr = group.get(i);
+                    double distance = curr.getOdometer() - prev.getOdometer();
+                    if (distance > 0) totalDistance += distance;
+                }
+                Double avgCostPerLiter = totalLiters > 0 ? totalSpend / totalLiters : null;
+                Double avgConsumption = totalDistance > 0 ? (totalLiters / totalDistance) * 100 : null;
+                int fillUpCount = group.size();
+                return BrandGradeComparisonDto.builder()
+                    .brand(brand)
+                    .grade(grade)
+                    .avgCostPerLiter(avgCostPerLiter)
+                    .avgConsumption(avgConsumption)
+                    .fillUpCount(fillUpCount)
+                    .build();
+            })
+            .toList();
+    }
+
+    public List<FuelEntryPerFillDto> getPerFillConsumption(Long userId, Long vehicleId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        List<FuelEntry> entries = fuelEntryRepository.findAll(
+            FuelEntrySpecification.filter(vehicleId, null, null, null, startDate, endDate, userId),
+            Sort.by("date").ascending()
+        );
+        List<FuelEntryPerFillDto> result = new ArrayList<>();
+        for (int i = 1; i < entries.size(); i++) {
+            FuelEntry prev = entries.get(i - 1);
+            FuelEntry curr = entries.get(i);
+            double distance = curr.getOdometer() - prev.getOdometer();
+            Double consumption = (curr.getLiters() != null && distance > 0) ? (curr.getLiters() / distance) * 100 : null;
+            result.add(FuelEntryPerFillDto.builder()
+                .date(curr.getDate().toString())
+                .consumptionLPer100km(consumption)
+                .build());
+        }
+        return result;
     }
 
     private static class ConsumptionResult {
