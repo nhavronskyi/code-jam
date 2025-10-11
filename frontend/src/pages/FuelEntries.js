@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance, { setNavigate } from '../axiosInstance';
 import './FuelEntries.css';
 
 const FuelEntries = () => {
@@ -18,13 +20,14 @@ const FuelEntries = () => {
     notes: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    setNavigate(navigate);
     const fetchVehicles = async () => {
       try {
-        const response = await fetch('/api/vehicles');
-        const data = await response.json();
-        setVehicles(data);
+        const response = await axiosInstance.get('/api/vehicles');
+        setVehicles(response.data);
         setLoading(false);
       } catch (err) {
         setError(err);
@@ -32,16 +35,15 @@ const FuelEntries = () => {
       }
     };
     fetchVehicles();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const fetchFuelEntries = async () => {
       if (!selectedVehicle) return;
       setLoading(true);
       try {
-        const response = await fetch(`/api/fuel-entries/vehicle/${selectedVehicle}`);
-        const data = await response.json();
-        setFuelEntries(data);
+        const response = await axiosInstance.get(`/api/fuel-entries/vehicle/${selectedVehicle}`);
+        setFuelEntries(response.data);
         setLoading(false);
       } catch (err) {
         setError(err);
@@ -49,7 +51,7 @@ const FuelEntries = () => {
       }
     };
     fetchFuelEntries();
-  }, [selectedVehicle]);
+  }, [selectedVehicle, navigate]);
 
   const handleVehicleChange = (e) => {
     setSelectedVehicle(e.target.value);
@@ -63,12 +65,7 @@ const FuelEntries = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/fuel-entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, vehicleId: selectedVehicle })
-      });
-      if (!res.ok) throw new Error('Failed to add entry');
+      await axiosInstance.post('/api/fuel-entries', { ...form, vehicleId: selectedVehicle });
       setForm({
         date: '',
         odometer: '',
@@ -80,9 +77,8 @@ const FuelEntries = () => {
         notes: ''
       });
       // Refresh entries
-      const entriesRes = await fetch(`/api/fuel-entries/vehicle/${selectedVehicle}`);
-      const entriesData = await entriesRes.json();
-      setFuelEntries(entriesData);
+      const entriesRes = await axiosInstance.get(`/api/fuel-entries/vehicle/${selectedVehicle}`);
+      setFuelEntries(entriesRes.data);
     } catch (err) {
       setError(err);
     }
@@ -92,8 +88,7 @@ const FuelEntries = () => {
   const handleDeleteEntry = async (id) => {
     if (!window.confirm('Delete this entry?')) return;
     try {
-      const res = await fetch(`/api/fuel-entries/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete entry');
+      await axiosInstance.delete(`/api/fuel-entries/${id}`);
       setFuelEntries(fuelEntries.filter(entry => entry.id !== id));
     } catch (err) {
       setError(err);

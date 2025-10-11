@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance, { setNavigate } from '../axiosInstance';
 
 export default function Home() {
   const [vehicles, setVehicles] = useState([]);
@@ -6,16 +8,18 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const isLoggedIn = !!localStorage.getItem('userId');
+  const navigate = useNavigate();
 
   useEffect(() => {
+    setNavigate(navigate);
     if (!isLoggedIn) {
       setLoading(false);
       return;
     }
     setLoading(true);
     Promise.all([
-      fetch('/api/vehicles', { credentials: 'include' }).then(res => res.ok ? res.json() : []),
-      fetch('/api/fuel-entries/history', { credentials: 'include' }).then(res => res.ok ? res.json() : [])
+      axiosInstance.get('/api/vehicles').then(res => res.data),
+      axiosInstance.get('/api/fuel-entries/history').then(res => res.data)
     ])
       .then(([vehiclesData, fuelEntriesData]) => {
         setVehicles(vehiclesData);
@@ -26,7 +30,7 @@ export default function Home() {
         setError('Failed to load dashboard info');
         setLoading(false);
       });
-  }, [isLoggedIn]);
+  }, [isLoggedIn, navigate]);
 
   // Basic stats calculations
   const totalVehicles = vehicles.length;
