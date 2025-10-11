@@ -86,16 +86,21 @@ public class StatisticsService {
         return calculateAggregates(entries);
     }
 
-    // --- Time-based statistics (monthly/yearly) ---
-    public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId, int year) {
-        List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId);
-        Map<String, List<FuelEntry>> byMonth = entries.stream().filter(e -> e.getDate().getYear() == year)
-                .collect(Collectors.groupingBy(e -> String.format("%02d", e.getDate().getMonthValue())));
+    // --- Time-based statistics (rolling window) ---
+    public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId) {
+        return getMonthlyStats(userId, vehicleId, 30);
+    }
+
+    public Map<String, Map<String, Object>> getMonthlyStats(Long userId, Long vehicleId, Integer windowSizeDays) {
+        int window = (windowSizeDays != null) ? windowSizeDays : 30;
+        LocalDate today = LocalDate.now();
+        LocalDate windowAgo = today.minusDays(window);
+        List<FuelEntry> entries = fuelEntryRepository.findByVehicleUserIdAndVehicleIdOrderByDateDesc(userId, vehicleId)
+            .stream()
+            .filter(e -> !e.getDate().isBefore(windowAgo))
+            .collect(Collectors.toList());
         Map<String, Map<String, Object>> stats = new TreeMap<>();
-        for (String month : byMonth.keySet()) {
-            List<FuelEntry> monthEntries = byMonth.get(month);
-            stats.put(month, calculateAggregates(monthEntries));
-        }
+        stats.put("last" + window + "Days", calculateAggregates(entries));
         return stats;
     }
 
@@ -221,7 +226,7 @@ public class StatisticsService {
         List<Double> consumptions = new ArrayList<>();
         for (FuelEntry entry : entries) {
             if (prev != null) {
-                int distance = entry.getOdometer() - prev.getOdometer();
+                int distance = prev.getOdometer() - entry.getOdometer();
                 totalDistance += distance;
                 if (distance > 0) {
                     consumptions.add((entry.getLiters() / distance) * 100);
